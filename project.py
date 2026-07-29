@@ -19,10 +19,10 @@ st.markdown("---")
 if 'student_db' not in st.session_state:
     # This data is fully completed with real values to guarantee zero errors
     initial_data = {
-        "Roll Num": [222787, 222788, 222789, 222100],
-        "Name": ["Alphonso Kamara", "Blessing Flomo", "Emmanuel Kollie","Prince Johnson"],
-        "Department": ["IT", "Computer Science", "Cyber Security","Medical Lab Science"],
-        "Marks (%)": [85, 92, 78,88],
+        "Roll Num": [222787, 222788, 222789,],
+        "Name": ["Alphonso Kamara", "Blessing Flomo", "Emmanuel Kollie"],
+        "Department": ["IT", "Computer Science", "Cyber Security"],
+        "Marks (%)": [85, 92, 78,],
         "Grade": ["A", "A+", "B"]
     }
     st.session_state.student_db = pd.DataFrame(initial_data)
