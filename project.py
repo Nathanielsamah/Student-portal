@@ -3,17 +3,28 @@ import pandas as pd
 import plotly.express as px
 from io import BytesIO
 
-# --- PASSWORD GATE START ---
+import streamlit as st
+import pandas as pd
+import plotly.express as px
+from io import BytesIO
+
+# --- 1. SECURE LOGIN SYSTEM & BRANDING AT THE ABSOLUTE TOP ---
 ADMIN_USER = "professor"
 ADMIN_PASSWORD = "liberia2026"
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
+# If the user is NOT logged in, show ONLY the login form and your name
 if not st.session_state.logged_in:
     st.set_page_config(page_title="Secure Login", page_icon="🔐", layout="centered")
-    st.markdown("<br><br><br><h2 style='text-align: center;'>🔐 Secure Academic Portal Access</h2>", unsafe_allow_html=True)
+    
+    st.markdown("<br><br><br>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>🔐 Secure Academic Portal Access</h2>", unsafe_allow_html=True)
     st.markdown("<p style='text-align: center; color: gray;'>Please authenticate to access the data management system.</p>", unsafe_allow_html=True)
+    
+    # 🌟 Your Developer Branding is joined right here inside the gate
+    st.markdown("<p style='text-align: center; color: #FFD700; font-weight: bold; font-size: 20px;'>Developed by: Nathaniel Samah (MSc IT)</p>", unsafe_allow_html=True)
     
     with st.form("login_form"):
         username_input = st.text_input("Username")
@@ -26,13 +37,8 @@ if not st.session_state.logged_in:
                 st.rerun()
             else:
                 st.error("❌ Invalid Username or Password. Access Denied.")
-    st.stop()  # Stops execution right here if not logged in
-
-# Optional Sidebar Logout Button
-if st.sidebar.button("🚪 Secure Logout"):
-    st.session_state.logged_in = False
-    st.rerun()
-# --- PASSWORD GATE END ---
+    st.stop()  # Freeze everything below this line for unauthorized users
+# --- END OF SECURITY GATE ---
 
 # 1. Page Configuration
 st.set_page_config(
