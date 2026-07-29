@@ -19,11 +19,11 @@ st.markdown("---")
 if 'student_db' not in st.session_state:
     # This data is fully completed with real values to guarantee zero errors
     initial_data = {
-        "Roll Num": [222787, 222788, 222789],
-        "Name": ["Alphonso Kamara", "Blessing Flomo", "Emmanuel Kollie"],
+        "Roll Num": [222787, 222788, 222789, 338900],
+        "Name": ["Alphonso Kamara", "Blessing Flomo", "Emmanuel Kollie", "Smith Samah"],
         "Department": ["IT", "Computer Science", "Cyber Security", "Medical Lab Science"],
         "Marks (%)": [85, 92, 78, 88],
-        "Grade": ["A", "A+", "B"]
+        "Grade": ["A", "A+", "B", "C"]
     }
     st.session_state.student_db = pd.DataFrame(initial_data)
 
@@ -37,7 +37,7 @@ with col_form:
     with st.form("student_entry_form", clear_on_submit=True):
         roll_num = st.number_input("Roll Number", min_value=1, step=1, value=104)
         student_name = st.text_input("Student Full Name", placeholder="Enter name here")
-        department = st.selectbox("Department", ["IT", "Cyber Security", "Cloud Computing", "Computer Science"])
+        department = st.selectbox("Department", ["IT", "Cyber Security", "Cloud Computing", "Computer Science", "Medical Lab Science"])
         marks = st.slider("Total Marks (%)", min_value=0, max_value=100, value=75)
         grade = st.selectbox("Final Grade", ["A+", "A", "B+", "B", "C", "Fail"])
         
