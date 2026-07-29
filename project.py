@@ -21,7 +21,7 @@ if 'student_db' not in st.session_state:
     initial_data = {
         "Roll Num": [222787, 222788, 222789],
         "Name": ["Alphonso Kamara", "Blessing Flomo", "Emmanuel Kollie"],
-        "Department": ["IT", "Computer Science", "Cyber Security"],
+        "Department": ["IT", "Computer Science", "Cyber Security","Medical Lab Science"],
         "Marks (%)": [85, 92, 78],
         "Grade": ["A", "A+", "B"]
     }
