@@ -10,7 +10,7 @@ from io import BytesIO
 
 # --- 1. SECURE LOGIN SYSTEM & BRANDING AT THE ABSOLUTE TOP ---
 ADMIN_USER = "professor"
-ADMIN_PASSWORD = "liberia2026"
+ADMIN_PASSWORD = "liberia2029"
 
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
@@ -24,7 +24,7 @@ if not st.session_state.logged_in:
     st.markdown("<p style='text-align: center; color: gray;'>Please authenticate to access the data management system.</p>", unsafe_allow_html=True)
     
     # 🌟 Your Developer Branding is joined right here inside the gate
-    st.markdown("<p style='text-align: center; color: #FFD700; font-weight: bold; font-size: 20px;'>Developed by: Nathaniel Samah (MSc IT)</p>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: #FFD700; font-weight: bold; font-size: 20px;'>Developed by: Mr Nathaniel Samah (IT Specialist)</p>", unsafe_allow_html=True)
     
     with st.form("login_form"):
         username_input = st.text_input("Username")
