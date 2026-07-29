@@ -3,6 +3,37 @@ import pandas as pd
 import plotly.express as px
 from io import BytesIO
 
+# --- PASSWORD GATE START ---
+ADMIN_USER = "professor"
+ADMIN_PASSWORD = "liberia2026"
+
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if not st.session_state.logged_in:
+    st.set_page_config(page_title="Secure Login", page_icon="🔐", layout="centered")
+    st.markdown("<br><br><br><h2 style='text-align: center;'>🔐 Secure Academic Portal Access</h2>", unsafe_allow_html=True)
+    st.markdown("<p style='text-align: center; color: gray;'>Please authenticate to access the data management system.</p>", unsafe_allow_html=True)
+    
+    with st.form("login_form"):
+        username_input = st.text_input("Username")
+        password_input = st.text_input("Password", type="password")
+        login_submit = st.form_submit_button("Authenticate Access")
+        
+        if login_submit:
+            if username_input == ADMIN_USER and password_input == ADMIN_PASSWORD:
+                st.session_state.logged_in = True
+                st.rerun()
+            else:
+                st.error("❌ Invalid Username or Password. Access Denied.")
+    st.stop()  # Stops execution right here if not logged in
+
+# Optional Sidebar Logout Button
+if st.sidebar.button("🚪 Secure Logout"):
+    st.session_state.logged_in = False
+    st.rerun()
+# --- PASSWORD GATE END ---
+
 # 1. Page Configuration
 st.set_page_config(
     page_title="Professor's Student Records Portal",
@@ -82,42 +113,6 @@ with col_table:
     )
 
 st.markdown("---")
-# --- PASSWORD GATE START ---
-# Define your login credentials here
-ADMIN_USER = "professor"
-ADMIN_PASSWORD = "liberia2029"
-
-# Check if the user is already logged in
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-
-# Display login screen if unauthorized
-if not st.session_state.logged_in:
-    st.markdown("<h2 style='text-align: center;'>🔐 Secure Academic Portal Access</h2>", unsafe_allow_html=True)
-    st.markdown("<p style='text-align: center; color: gray;'>Please authenticate to access the data management system.</p>", unsafe_allow_html=True)
-    
-    _, login_col, _ = st.columns([1, 2, 1])
-    with login_col:
-        with st.form("login_form"):
-            username_input = st.text_input("Username")
-            password_input = st.text_input("Password", type="password")
-            login_submit = st.form_submit_button("Authenticate Access")
-            
-            if login_submit:
-                if username_input == ADMIN_USER and password_input == ADMIN_PASSWORD:
-                    st.session_state.logged_in = True
-                    st.rerun()
-                else:
-                    st.error("❌ Invalid Username or Password. Access Denied.")
-                    st.info("💡 Commercial License Note: Please contact the developer for access credentials.")
-    st.stop() # Stops the rest of your app from loading
-
-# Optional: Add a logout option to your sidebar
-if st.sidebar.button("🚪 Secure Logout"):
-    st.session_state.logged_in = False
-    st.rerun()
-# --- PASSWORD GATE END ---
-
 
 # 5. Bottom Section: Automated Analytics Dashboard
 st.subheader("📈 Class Performance Analytics")
