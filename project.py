@@ -5,6 +5,10 @@ import json
 from io import BytesIO  # Handles file memory for the Excel download
 from streamlit_local_storage import LocalStorage  # Saves data directly to browser hard drive
 
+# --- CONFIGURATION: SET YOUR MASTER CREDENTIALS HERE ---
+MASTER_ID = "professor"
+MASTER_PASSWORD = "university2020"
+
 # 1. Page Configuration and Theme Styling
 st.set_page_config(
     page_title="Professor's Student Records Portal",
@@ -12,16 +16,41 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Header Section
+# 2. Sidebar Login Panel
+st.sidebar.title("🔐 System Login")
+input_id = st.sidebar.text_input("Enter Master ID:")
+input_password = st.sidebar.text_input("Enter Password:", type="password")
+login_button = st.sidebar.button("Login")
+
+# Maintain login state across refreshes
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+if login_button:
+    if input_id == MASTER_ID and input_password == MASTER_PASSWORD:
+        st.session_state.logged_in = True
+        st.sidebar.success("✅ Login Successful!")
+    else:
+        st.session_state.logged_in = False
+        st.sidebar.error("❌ Incorrect ID or Password.")
+
+# Check if user is authenticated
+if not st.session_state.logged_in:
+    st.title("🎓 Professor's Student Records & Analytics Portal")
+    st.warning("🔒 Access Denied. Please enter the correct Master ID and Password in the sidebar to unlock the portal.")
+    st.stop()  # Stops execution right here if credentials don't match
+
+# 3. Header Section (Only shows AFTER successful login)
 st.title("🎓 Professor's Student Records & Analytics Portal")
+st.write(f"Logged in securely as: **{MASTER_ID}**")
 st.write("An administrative database dashboard designed for educators to record student details, track marks, and monitor performance trends.")
 st.markdown("---")
 
-# 3. PERMANENT LOCAL STORAGE INITIALIZATION
+# 4. PERMANENT LOCAL STORAGE INITIALIZATION
 local_storage = LocalStorage()
 
-# Fetch data from browser storage
-saved_json = local_storage.getItem("permanent_student_db")
+# Fetch data from the teacher's browser hard drive
+saved_json = local_storage.getItem("permanent_student_db_master")
 
 # Initialize the central session table
 if 'student_db' not in st.session_state:
@@ -34,8 +63,8 @@ if 'student_db' not in st.session_state:
     else:
         st.session_state.student_db = pd.DataFrame(columns=["Roll Num", "Name", "Department", "Marks (%)", "Grade"])
 
-# 4. Layout: Split Screen into Input Form (Left) and Data View (Right)
-col_form, col_table = st.columns([1, 2], gap="large")
+# 5. Layout: Split Screen into Input Form (Left) and Data View (Right)
+col_form, col_table = st.columns(, gap="large")
 
 # --- LEFT COLUMN: TEACHER INPUT FORM ---
 with col_form:
@@ -50,7 +79,7 @@ with col_form:
         
         submit_button = st.form_submit_button("Save Student Record")
 
-    # --- REFIRED AND FIXED SAVE LOGIC ---
+    # --- SAVE LOGIC ---
     if submit_button:
         if student_name.strip() == "":
             st.error("⚠️ Please enter a valid student name.")
@@ -64,19 +93,17 @@ with col_form:
                 "Marks (%)": int(marks),
                 "Grade": grade
             }
-            # Add directly into running session data frame
+            # Add directly into running session dataframe
             st.session_state.student_db = pd.concat(
                 [st.session_state.student_db, pd.DataFrame([new_student])], 
                 ignore_index=True
             )
             
-            # Pack data array to a JSON string and store it safely into browser local storage
+            # Save permanently to the browser hard drive
             updated_json = st.session_state.student_db.to_json(orient="records")
-            local_storage.setItem("permanent_student_db", updated_json)
+            local_storage.setItem("permanent_student_db_master", updated_json)
             
             st.success(f"✅ Successfully saved {student_name} permanently to your device!")
-            
-            # REMOVED st.rerun() to let the background asynchronous browser process finish saving!
 
 # --- RIGHT COLUMN: DATABASE VIEW & EXPORT ---
 with col_table:
@@ -102,7 +129,7 @@ with col_table:
 
 st.markdown("---")
 
-# 5. Bottom Section: Automated Analytics Dashboard
+# 6. Bottom Section: Automated Analytics Dashboard
 st.subheader("📈 Class Performance Analytics")
 
 if not st.session_state.student_db.empty:
