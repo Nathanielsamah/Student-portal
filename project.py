@@ -52,17 +52,13 @@ st.title("🎓 Professor's Student Records & Analytics Portal")
 st.write("An administrative database dashboard designed for educators to record student details, track marks, and monitor performance trends.")
 st.markdown("---")
 
-# 3. Session State Initialization (In-Memory Database)
+# 3.# 3. Session State Initialization (In-Memory Database per Session)
 if 'student_db' not in st.session_state:
-    # This data is fully completed with real values to guarantee zero errors
-    initial_data = {
-        "Roll Num": [222787, 222788, 222789, 338900],
-        "Name": ["Alphonso Kamara", "Blessing Flomo", "Emmanuel Kollie", "Smith Samah"],
-        "Department": ["IT", "Computer Science", "Cyber Security", "Medical Lab Science"],
-        "Marks (%)": [85, 92, 78, 88],
-        "Grade": ["A", "A+", "B", "C"]
-    }
-    st.session_state.student_db = pd.DataFrame(initial_data)
+    # Creating an empty table with defined columns so every user starts completely fresh
+    st.session_state.student_db = pd.DataFrame(columns=[
+        "Roll Num", "Name", "Department", "Marks (%)", "Grade"
+    ])
+
 
 # 4. Layout Columns
 col_form, col_table = st.columns(2, gap="large")
