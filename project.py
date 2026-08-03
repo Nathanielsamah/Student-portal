@@ -7,7 +7,7 @@ from streamlit_local_storage import LocalStorage  # Saves data directly to brows
 
 # --- CONFIGURATION: SET YOUR MASTER CREDENTIALS HERE ---
 MASTER_ID = "professor"
-MASTER_PASSWORD = "university2020"
+MASTER_PASSWORD = "university2021"
 
 # 1. Page Configuration and Theme Styling
 st.set_page_config(
@@ -64,7 +64,7 @@ if 'student_db' not in st.session_state:
         st.session_state.student_db = pd.DataFrame(columns=["Roll Num", "Name", "Department", "Marks (%)", "Grade"])
 
 # 5. Layout: Split Screen into Input Form (Left) and Data View (Right)
-col_form, col_table = st.columns(, gap="large")
+col_form, col_table = st.columns([1, 2], gap="large")
 
 # --- LEFT COLUMN: TEACHER INPUT FORM ---
 with col_form:
