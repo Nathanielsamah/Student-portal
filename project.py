@@ -16,23 +16,47 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Sidebar Login Panel
-st.sidebar.title("🔐 System Login")
-input_id = st.sidebar.text_input("Enter Master ID:")
-input_password = st.sidebar.text_input("Enter Password:", type="password")
-login_button = st.sidebar.button("Login")
-
-# Maintain login state across refreshes
+# Initialize login state across refreshes
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-if login_button:
-    if input_id == MASTER_ID and input_password == MASTER_PASSWORD:
-        st.session_state.logged_in = True
-        st.sidebar.success("✅ Login Successful!")
-    else:
+# 2. Sidebar Login & Management Panel
+st.sidebar.title("🔐 System Panel")
+
+if not st.session_state.logged_in:
+    # Show Login form if not logged in
+    input_id = st.sidebar.text_input("Enter Master ID:")
+    input_password = st.sidebar.text_input("Enter Password:", type="password")
+    login_button = st.sidebar.button("Login")
+
+    if login_button:
+        if input_id == MASTER_ID and input_password == MASTER_PASSWORD:
+            st.session_state.logged_in = True
+            st.sidebar.success("✅ Login Successful!")
+            st.rerun()
+        else:
+            st.sidebar.error("❌ Incorrect ID or Password.")
+else:
+    # Show Control buttons if already logged in
+    st.sidebar.success(f"Logged in as: **{MASTER_ID}**")
+    
+    st.sidebar.markdown("---")
+    st.sidebar.subheader("🛠️ Administrative Controls")
+    
+    # CLEAR ALL DATA BUTTON
+    if st.sidebar.button("🗑️ Clear All Student Data", help="This will permanently delete all records saved on this device."):
+        # 1. Wipe local memory dataframe
+        st.session_state.student_db = pd.DataFrame(columns=["Roll Num", "Name", "Department", "Marks (%)", "Grade"])
+        # 2. Clear browser hard drive cache
+        local_storage = LocalStorage()
+        local_storage.setItem("permanent_student_db_master", "")
+        st.sidebar.warning("💥 All local student data has been wiped!")
+        st.rerun()
+        
+    # LOGOUT BUTTON
+    if st.sidebar.button("🚪 Log Out"):
         st.session_state.logged_in = False
-        st.sidebar.error("❌ Incorrect ID or Password.")
+        st.rerun()
 
 # Check if user is authenticated
 if not st.session_state.logged_in:
@@ -42,7 +66,6 @@ if not st.session_state.logged_in:
 
 # 3. Header Section (Only shows AFTER successful login)
 st.title("🎓 Professor's Student Records & Analytics Portal")
-st.write(f"Logged in securely as: **{MASTER_ID}**")
 st.write("An administrative database dashboard designed for educators to record student details, track marks, and monitor performance trends.")
 st.markdown("---")
 
