@@ -117,7 +117,7 @@ if 'student_db' not in st.session_state:
     else:
         st.session_state.student_db = pd.DataFrame()
 
-# 4. Interface Split Layout Configuration (FIXED COLUMN SETUP HERE)
+# 4. Interface Split Layout Configuration
 col_form, col_table = st.columns(2, gap="large")
 
 with col_form:
@@ -212,7 +212,7 @@ with col_table:
 
 st.markdown("---")
 
-# 5. PRINTABLE REPORT CARD CODE COMPONENT (MATCHING THE ATTACHED IMAGE)
+# 5. PRINTABLE REPORT CARD CODE COMPONENT (SAFE STANDARD STRING ASSIGNMENT)
 if not st.session_state.student_db.empty:
     st.subheader("🖨️ Grade Sheet Print Preview")
     st.info("💡 Pro Tip: To print this sheet cleanly, press Ctrl+P (or Cmd+P on Mac). The application layout will disappear automatically, leaving only the official document sheet template visible.")
@@ -231,5 +231,6 @@ if not st.session_state.student_db.empty:
         </tr>
         """
         
-    # Complete raw HTML layout component structured identically to the user's uploaded image
-    report_card_template = f"""
+    # Standard clean HTML multiline string skeleton layout template
+    report_card_template = """
+    <div class="print-container" style="border: 4px double black; padding: 25px; max-width: 800px; margin: auto; background-color: white; color: black; font-family: 'Arial', sans-serif;">
