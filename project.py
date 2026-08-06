@@ -5,6 +5,10 @@ import json
 from io import BytesIO  # Handles file memory for the Excel download
 from streamlit_local_storage import LocalStorage  # Saves data directly to browser hard drive
 
+# --- CONFIGURATION: SET YOUR MASTER CREDENTIALS HERE ---
+MASTER_ID = "admin"
+MASTER_PASSWORD = "school2026"
+
 # 1. Page Configuration and Theme Styling
 st.set_page_config(
     page_title="Professor's Student Records Portal",
@@ -12,13 +16,44 @@ st.set_page_config(
     layout="wide"
 )
 
-# 2. Header Section
+# Initialize and maintain login validation state across page reruns
+if "logged_in" not in st.session_state:
+    st.session_state.logged_in = False
+
+# 2. System Login Interface (Blocks layout BEFORE entering the system)
+if not st.session_state.logged_in:
+    st.title("🎓 Professor's Student Records & Analytics Portal")
+    st.markdown("---")
+    
+    # Render login interface container right in the center window frame
+    st.subheader("🔐 Secure System Gatekeeper Authentication")
+    st.info("🔒 This administrative application is locked. Please enter your authorization credentials below to open the record systems.")
+    
+    with st.form("system_access_gate", clear_on_submit=False):
+        input_id = st.text_input("Master ID:")
+        input_password = st.text_input("Master Password:", type="password")
+        submit_login = st.form_submit_button("🔑 Unlock Portal Access")
+        
+    if submit_login:
+        if input_id == MASTER_ID and input_password == MASTER_PASSWORD:
+            st.session_state.logged_in = True
+            st.success("✅ Credentials verified successfully! Loading system database...")
+            st.rerun()
+        else:
+            st.error("❌ Authentication Failed: Incorrect ID or Password string value entered.")
+            
+    st.stop()  # Complete hard-stop execution block to ensure unauthorized requests cannot pass
+
+# --- CORE PORTAL APPLICATION MODULE RUNS ONLY AFTER SUCCESSFUL AUTHENTICATION ---
+
+# 3. Header Section
 st.title("🎓 Professor's Student Records & Analytics Portal")
+st.write(f"Securely authenticated session active as: **{MASTER_ID}**")
 st.write("An administrative database dashboard designed for educators to record student details, track marks, and monitor performance trends.")
 st.markdown("---")
 
 
-# 3. PERMANENT LOCAL STORAGE INITIALIZATION
+# 4. PERMANENT LOCAL STORAGE INITIALIZATION
 # Connects to the individual teacher's browser hard drive
 local_storage = LocalStorage()
 
@@ -39,8 +74,8 @@ if 'student_db' not in st.session_state:
         st.session_state.student_db = pd.DataFrame(columns=["Roll Num", "Name", "Department", "Marks (%)", "Grade"])
 
 
-# 4. Layout: Split Screen into Input Form (Left) and Data View (Right)
-col_form, col_table = st.columns([1, 2], gap="large")
+# 5. Layout: Split Screen into Input Form (Left) and Data View (Right)
+col_form, col_table = st.columns(2, gap="large")
 
 # --- LEFT COLUMN: TEACHER INPUT FORM ---
 with col_form:
@@ -106,7 +141,7 @@ with col_table:
 
 st.markdown("---")
 
-# 5. Bottom Section: Automated Analytics Dashboard
+# 6. Bottom Section: Automated Analytics Dashboard
 st.subheader("📈 Class Performance Analytics")
 
 if not st.session_state.student_db.empty:
