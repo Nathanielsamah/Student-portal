@@ -206,14 +206,14 @@ with col_table:
         st.subheader("🖨️ Select Student To Print Grade Sheet")
         target_student = st.selectbox("Choose Student Profile:", st.session_state.student_db["Name"].unique())
         
-        # FIXED HERE: Added .iloc[0] to correctly extract the Series row
+        # FIX: Added .iloc[0] to fetch the single active data matching row safely
         student_row = st.session_state.student_db[st.session_state.student_db["Name"] == target_student].iloc[0]
     else:
         st.info("System ledger pipeline is empty. Submit a transcript record to view printable output sheets.")
 
 st.markdown("---")
 
-# 5. PRINTABLE REPORT CARD CODE COMPONENT (SAFE STANDARD STRING ASSIGNMENT)
+# 5. PRINTABLE REPORT CARD CODE COMPONENT (SAFE LIST-JOIN SOLUTION)
 if not st.session_state.student_db.empty:
     st.subheader("🖨️ Grade Sheet Print Preview")
     st.info("💡 Pro Tip: To print this sheet cleanly, press Ctrl+P (or Cmd+P on Mac). The application layout will disappear automatically, leaving only the official document sheet template visible.")
@@ -232,5 +232,5 @@ if not st.session_state.student_db.empty:
         </tr>
         """
         
-    # Standard clean HTML multiline string skeleton layout template
-    report_card_template = """
+    # Crash-proof single line list join composition instead of a multi-line literal string block
+    html_lines = [
