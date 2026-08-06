@@ -16,66 +16,55 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize and maintain login validation state across page reruns
+# 2. Sidebar Login Panel
+st.sidebar.title("🔐 System Login")
+input_id = st.sidebar.text_input("Enter Master ID:")
+input_password = st.sidebar.text_input("Enter Password:", type="password")
+login_button = st.sidebar.button("Login")
+
+# Maintain login state across refreshes
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# 2. System Login Interface (Blocks layout BEFORE entering the system)
+if login_button:
+    if input_id == MASTER_ID and input_password == MASTER_PASSWORD:
+        st.session_state.logged_in = True
+        st.sidebar.success("✅ Login Successful!")
+    else:
+        st.session_state.logged_in = False
+        st.sidebar.error("❌ Incorrect ID or Password.")
+
+# Check if user is authenticated
 if not st.session_state.logged_in:
     st.title("🎓 Professor's Student Records & Analytics Portal")
-    st.markdown("---")
-    
-    # Render login interface container right in the center window frame
-    st.subheader("🔐 Secure System Gatekeeper Authentication")
-    st.info("🔒 This administrative application is locked. Please enter your authorization credentials below to open the record systems.")
-    
-    with st.form("system_access_gate", clear_on_submit=False):
-        input_id = st.text_input("Master ID:")
-        input_password = st.text_input("Master Password:", type="password")
-        submit_login = st.form_submit_button("🔑 Unlock Portal Access")
-        
-    if submit_login:
-        if input_id == MASTER_ID and input_password == MASTER_PASSWORD:
-            st.session_state.logged_in = True
-            st.success("✅ Credentials verified successfully! Loading system database...")
-            st.rerun()
-        else:
-            st.error("❌ Authentication Failed: Incorrect ID or Password string value entered.")
-            
-    st.stop()  # Complete hard-stop execution block to ensure unauthorized requests cannot pass
+    st.warning("🔒 Access Denied. Please enter the correct Master ID and Password in the sidebar to unlock the portal.")
+    st.stop()  # Stops execution right here if credentials don't match
 
-# --- CORE PORTAL APPLICATION MODULE RUNS ONLY AFTER SUCCESSFUL AUTHENTICATION ---
-
-# 3. Header Section
+# 3. Header Section (Only shows AFTER successful login)
 st.title("🎓 Professor's Student Records & Analytics Portal")
-st.write(f"Securely authenticated session active as: **{MASTER_ID}**")
+st.write(f"Logged in securely as: **{MASTER_ID}**")
 st.write("An administrative database dashboard designed for educators to record student details, track marks, and monitor performance trends.")
 st.markdown("---")
 
-
 # 4. PERMANENT LOCAL STORAGE INITIALIZATION
-# Connects to the individual teacher's browser hard drive
 local_storage = LocalStorage()
 
-# Check if this specific browser already has saved records
-saved_json = local_storage.getItem("permanent_student_db")
+# Fetch data from the teacher's browser hard drive
+saved_json = local_storage.getItem("permanent_student_db_master")
 
+# Initialize the central session table
 if 'student_db' not in st.session_state:
     if saved_json and saved_json.strip() != "":
         try:
-            # Convert saved browser text back into a usable data table
             data_dict = json.loads(saved_json)
             st.session_state.student_db = pd.DataFrame(data_dict)
         except Exception:
-            # Fallback if the saved data gets corrupted
             st.session_state.student_db = pd.DataFrame(columns=["Roll Num", "Name", "Department", "Marks (%)", "Grade"])
     else:
-        # Brand new teacher opening the site gets a completely clean, empty table
         st.session_state.student_db = pd.DataFrame(columns=["Roll Num", "Name", "Department", "Marks (%)", "Grade"])
 
-
 # 5. Layout: Split Screen into Input Form (Left) and Data View (Right)
-col_form, col_table = st.columns(2, gap="large")
+col_form, col_table = st.columns([1, 2], gap="large")
 
 # --- LEFT COLUMN: TEACHER INPUT FORM ---
 with col_form:
@@ -90,7 +79,7 @@ with col_form:
         
         submit_button = st.form_submit_button("Save Student Record")
 
-    # --- UPDATED SAVE FORM LOGIC ---
+    # --- SAVE LOGIC ---
     if submit_button:
         if student_name.strip() == "":
             st.error("⚠️ Please enter a valid student name.")
@@ -104,18 +93,17 @@ with col_form:
                 "Marks (%)": int(marks),
                 "Grade": grade
             }
-            # Append new student to the session state dataframe
+            # Add directly into running session dataframe
             st.session_state.student_db = pd.concat(
                 [st.session_state.student_db, pd.DataFrame([new_student])], 
                 ignore_index=True
             )
             
-            # Convert table to text format and save it permanently to the browser hard drive
+            # Save permanently to the browser hard drive
             updated_json = st.session_state.student_db.to_json(orient="records")
-            local_storage.setItem("permanent_student_db", updated_json)
+            local_storage.setItem("permanent_student_db_master", updated_json)
             
             st.success(f"✅ Successfully saved {student_name} permanently to your device!")
-            st.rerun()  # Forces app to refresh instantly and lock in the saved data
 
 # --- RIGHT COLUMN: DATABASE VIEW & EXPORT ---
 with col_table:
