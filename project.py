@@ -206,31 +206,34 @@ with col_table:
         st.subheader("🖨️ Select Student To Print Grade Sheet")
         target_student = st.selectbox("Choose Student Profile:", st.session_state.student_db["Name"].unique())
         
-        # FIX: Added .iloc[0] to fetch the single active data matching row safely
+        # FIXED CRASH HERE: Added .iloc[0] to safely pull the single dictionary row data
         student_row = st.session_state.student_db[st.session_state.student_db["Name"] == target_student].iloc[0]
     else:
         st.info("System ledger pipeline is empty. Submit a transcript record to view printable output sheets.")
 
 st.markdown("---")
 
-# 5. PRINTABLE REPORT CARD CODE COMPONENT (SAFE LIST-JOIN SOLUTION)
+# 5. PRINTABLE REPORT CARD COMPONENT (100% CRASH-PROOF STRING CONCATENATION)
 if not st.session_state.student_db.empty:
     st.subheader("🖨️ Grade Sheet Print Preview")
     st.info("💡 Pro Tip: To print this sheet cleanly, press Ctrl+P (or Cmd+P on Mac). The application layout will disappear automatically, leaving only the official document sheet template visible.")
     
+    # Extract row items to local simple text variables safely beforehand
+    v_uni = str(student_row["University"])
+    v_roll = str(student_row["Roll Num"])
+    v_college = str(student_row["College"])
+    v_dept = str(student_row["Department"])
+    v_sem = str(student_row["Semester"])
+    v_session = str(student_row["Session"])
+    v_name = str(student_row["Name"]).upper()
+    v_father = str(student_row["Father Name"]).upper()
+    v_mother = str(student_row["Mother Name"]).upper()
+    v_sgpa = str(student_row["SGPA"])
+    v_date = str(student_row["Date"])
+
     # Compile rows layout for the dynamic HTML transcript table
     table_rows_html = ""
     for sub in SUBJECTS_DATA:
-        grade_val = student_row[f"{sub['name']}_Grade"]
-        table_rows_html += f"""
-        <tr>
-            <td style="border: 1px solid black; padding: 6px; text-align: center;">{sub['code']}</td>
-            <td style="border: 1px solid black; padding: 6px; text-align: left;">{sub['name']}</td>
-            <td style="border: 1px solid black; padding: 6px; text-align: center;">{sub['type']}</td>
-            <td style="border: 1px solid black; padding: 6px; text-align: center;">{sub['credits']}</td>
-            <td style="border: 1px solid black; padding: 6px; text-align: center; font-weight: bold;">{grade_val}</td>
-        </tr>
-        """
-        
-    # Crash-proof single line list join composition instead of a multi-line literal string block
-    html_lines = [
+        grade_val = str(student_row[sub["name"] + "_Grade"])
+        table_rows_html += "<tr>"
+        table_rows_html += "<td style='border: 1px solid black; padding: 6px; text-align: center;'>" + sub["code"] + "</td>"
