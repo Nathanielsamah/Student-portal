@@ -206,6 +206,7 @@ with col_table:
         st.subheader("🖨️ Select Student To Print Grade Sheet")
         target_student = st.selectbox("Choose Student Profile:", st.session_state.student_db["Name"].unique())
         
+        # FIXED HERE: Added .iloc[0] to correctly extract the Series row
         student_row = st.session_state.student_db[st.session_state.student_db["Name"] == target_student].iloc[0]
     else:
         st.info("System ledger pipeline is empty. Submit a transcript record to view printable output sheets.")
@@ -233,4 +234,3 @@ if not st.session_state.student_db.empty:
         
     # Standard clean HTML multiline string skeleton layout template
     report_card_template = """
-    <div class="print-container" style="border: 4px double black; padding: 25px; max-width: 800px; margin: auto; background-color: white; color: black; font-family: 'Arial', sans-serif;">
