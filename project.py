@@ -49,7 +49,7 @@ st.set_page_config(
 st.markdown("""
 <style>
 @media print {
-    .stApp > header, [data-testid="stSidebar"], [data-testid="stForm"], button, .no-print {
+    .stApp > header, [data-testid="stSidebar"], [data-testid="stForm"], button, .no-print, [data-testid="stHeader"] {
         display: none !important;
     }
     .print-container {
@@ -117,7 +117,7 @@ if 'student_db' not in st.session_state:
     else:
         st.session_state.student_db = pd.DataFrame()
 
-# 4. Interface Split Layout Configuration
+# 4. Interface Split Layout Configuration (FIXED COLUMN SETUP HERE)
 col_form, col_table = st.columns(2, gap="large")
 
 with col_form:
@@ -233,4 +233,3 @@ if not st.session_state.student_db.empty:
         
     # Complete raw HTML layout component structured identically to the user's uploaded image
     report_card_template = f"""
-    <div class="print-container" style="border: 4px double black; padding: 25px; max-width: 800px; margin: auto; background-color: white; color: black; font-family: 'Arial', sans-serif;">
