@@ -10,13 +10,33 @@ from streamlit_local_storage import LocalStorage
 MASTER_ID = "admin"
 MASTER_PASSWORD = "school2026"
 
-# --- CONFIGURATION: UNIVERSITY COURSE LIST ---
-COURSES_LIST = [
-    "Economics", "Mathematics 101", "Computer Science", 
-    "Business Administration", "Accounting", "Data Analytics", 
-    "Statistics", "Information Technology", "Corporate Finance", 
-    "Software Engineering"
+# --- CONFIGURATION: SUBJECTS WITH CODES & TYPES MATCHING THE IMAGE ---
+SUBJECTS_DATA = [
+    {"code": "UGCA1913", "name": "Computer Networks", "type": "Theory", "credits": 4},
+    {"code": "UGCA1916", "name": "Computer Networks Laboratory", "type": "Practical", "credits": 2},
+    {"code": "UGCA1927", "name": "Web Designing", "type": "Theory", "credits": 3},
+    {"code": "UGCA1928", "name": "Web Designing Laboratory", "type": "Practical", "credits": 1},
+    {"code": "UGCA1932", "name": "Programming in Java", "type": "Theory", "credits": 4},
+    {"code": "UGCA1938", "name": "Programming in Java Laboratory", "type": "Practical", "credits": 2},
+    {"code": "UGCA1961", "name": "Basic Accounting", "type": "Theory", "credits": 4},
+    {"code": "UGCA1962", "name": "Basic Accounting Laboratory", "type": "Practical", "credits": 2},
+    {"code": "BMPD402", "name": "Mentoring and Professional Development", "type": "Practical", "credits": 1}
 ]
+
+# Automated Grading Function
+def calculate_grade(score):
+    if score >= 90: return "A+"
+    elif score >= 80: return "A"
+    elif score >= 70: return "B+"
+    elif score >= 60: return "B"
+    elif score >= 50: return "C"
+    elif score >= 40: return "P"
+    else: return "F"
+
+# Grade Point calculation for SGPA estimation
+def grade_to_points(grade):
+    mapping = {"A+": 10, "A": 9, "B+": 8, "B": 7, "C": 6, "P": 5, "F": 0}
+    return mapping.get(grade, 0)
 
 # 1. Page Configuration
 st.set_page_config(
@@ -25,11 +45,27 @@ st.set_page_config(
     layout="wide"
 )
 
-# Maintain login state across refreshes
+# Inject print optimization styles
+st.markdown("""
+<style>
+@media print {
+    .stApp > header, [data-testid="stSidebar"], [data-testid="stForm"], button, .no-print {
+        display: none !important;
+    }
+    .print-container {
+        display: block !important;
+        width: 100% !important;
+        border: none !important;
+        padding: 0 !important;
+    }
+}
+</style>
+""", unsafe_allow_html=True)
+
 if "logged_in" not in st.session_state:
     st.session_state.logged_in = False
 
-# 2. Sidebar Navigation and Authorization Control Panel
+# 2. Sidebar Navigation Control Panel
 st.sidebar.title("🔐 Secure Login & Settings")
 
 if not st.session_state.logged_in:
@@ -47,35 +83,30 @@ if not st.session_state.logged_in:
 else:
     st.sidebar.success(f"Active Session: {MASTER_ID}")
     st.sidebar.markdown("---")
-    st.sidebar.subheader("⚙️ System Control Hub")
     
-    # SYSTEM RESET TRIGGER
-    if st.sidebar.button("🗑️ Wipe Entire Database", help="Irreversibly deletes all student profiles stored on this hardware."):
+    if st.sidebar.button("🗑️ Wipe Entire Database"):
         st.session_state.student_db = pd.DataFrame()
         local_storage = LocalStorage()
-        local_storage.setItem("uni_master_db", "")
-        st.sidebar.warning("💥 Database fully cleared!")
+        local_storage.setItem("uni_master_db_v2", "")
+        st.sidebar.warning("💥 Database cleared!")
         st.rerun()
         
-    # AUTH CLEAR LOGOUT
     if st.sidebar.button("🚪 System Logout"):
         st.session_state.logged_in = False
         st.rerun()
 
-# Halt processing if authentication state is false
 if not st.session_state.logged_in:
     st.title("🎓 University Academic Record & Grade Sheet System")
     st.warning("🔒 Access Denied. Please input authentication credentials in the sidebar panel.")
     st.stop()
 
-# 3. Main Application Workspace Header
+# 3. Main Workspace Setup
 st.title("🎓 University Academic Record & Grade Sheet System")
 st.write("Six-Week Python Training Project: Automated Performance Assessment Engine.")
 st.markdown("---")
 
-# 4. Storage Controller Framework
 local_storage = LocalStorage()
-saved_json = local_storage.getItem("uni_master_db")
+saved_json = local_storage.getItem("uni_master_db_v2")
 
 if 'student_db' not in st.session_state:
     if saved_json and saved_json.strip() != "":
@@ -86,72 +117,80 @@ if 'student_db' not in st.session_state:
     else:
         st.session_state.student_db = pd.DataFrame()
 
-# 5. Interface Split Layout Configuration
-col_form, col_table = st.columns([1, 1], gap="large")
+# 4. Interface Split Layout Configuration
+col_form, col_table = st.columns(2, gap="large")
 
 with col_form:
-    st.subheader("📝 Entry Form: Student Academic Marks")
+    st.subheader("I.K. Gujral Punjab Technical University Entry Form")
     
-    with st.form("academic_entry_form", clear_on_submit=True):
-        # Institutional Fields
-        selected_uni = st.selectbox("Select University:", [
-            "I.K. Gujral Punjab Technical University", 
-            "Synetic Business School Campus", 
-            "Punjab National Training University"
+    with st.form("academic_entry_form", clear_on_submit=False):
+        selected_uni = st.selectbox("Select University Header:", [
+            "I.K. GUJRAL PUNJAB TECHNICAL UNIVERSITY"
         ])
-        
-        selected_class = st.selectbox("Select Class / Cohort Group:", ["Class ABC"] + [f"Class {i}" for i in range(1, 13)])
-        acad_year = st.selectbox("Academic Evaluation Term:", ["2025/2026", "2026/2027", "2027/2028"])
-        issue_date = st.date_input("Date of Result Declaration:", date.today())
-        
-        # Student Biographic Fields
-        student_name = st.text_input("Student Full Name:")
-        roll_num = st.number_input("Registration / Roll Number:", min_value=1, step=1, value=2221757)
+        selected_college = st.selectbox("Name of the College/Institute:", [
+            "Synetic Business School, Sahibana, Ludhiana"
+        ])
+        department = st.selectbox("Department / Course Stream:", [
+            "Bachelor of Science (Information Technology)", 
+            "Computer Science & Engineering", 
+            "Business Administration"
+        ])
+        semester = st.selectbox("Semester:", ["FIRST Semester", "SECOND Semester", "THIRD Semester", "FOURTH Semester"])
+        exam_session = st.text_input("Examination Session Date:", value="April-2025")
+        issue_date = st.date_input("Date of Issue:", date.today())
         
         st.markdown("---")
-        st.write("📊 **Course Scores Input (Scale 0 - 100)**")
+        student_name = st.text_input("Student Full Name:")
+        father_name = st.text_input("Father's Name:")
+        mother_name = st.text_input("Mother's Name:")
+        roll_num = st.number_input("Regn. cum Roll No:", min_value=1, step=1, value=2221757)
         
-        # Iterative Input Processing Loops for the 10 Courses
+        st.markdown("---")
+        st.write("📊 **Enter Subject Marks (0 - 100)**")
+        
         form_scores = {}
-        sub_col1, sub_col2 = st.columns(2)
-        
-        for idx, course in enumerate(COURSES_LIST):
-            target_col = sub_col1 if idx < 5 else sub_col2
-            with target_col:
-                form_scores[course] = st.number_input(f"{course}:", min_value=0, max_value=100, value=0, key=f"inp_{course}")
-        
-        submit_record = st.form_submit_button("💾 Save & Process Student Record")
+        for sub in SUBJECTS_DATA:
+            form_scores[sub["name"]] = st.number_input(f"{sub['name']} ({sub['code']}):", min_value=0, max_value=100, value=0)
+            
+        submit_record = st.form_submit_button("💾 Save Student Record")
 
     if submit_record:
         if not student_name.strip():
             st.error("⚠️ Record rejected: Student Full Name field cannot be empty.")
-        elif not st.session_state.student_db.empty and int(roll_num) in st.session_state.student_db["Roll Num"].values:
-            st.error(f"⚠️ Conflict: Roll Number {roll_num} already exists in the current cohort database.")
         else:
-            # Mathematical Calculations Engine
-            scores_series = pd.Series(form_scores)
-            total_marks = int(scores_series.sum())
-            calculated_avg = float(scores_series.mean())
-            final_status = "Pass" if calculated_avg >= 40.0 else "Fail"
+            # Calculation operations 
+            total_credits = sum([sub["credits"] for sub in SUBJECTS_DATA])
+            weighted_points = 0
+            pass_status = "Pass"
             
-            # Formulating data entity schema row
             new_entry = {
                 "University": selected_uni,
-                "Class": selected_class,
-                "Year": acad_year,
+                "College": selected_college,
+                "Department": department,
+                "Semester": semester,
+                "Session": exam_session,
                 "Date": str(issue_date),
                 "Roll Num": int(roll_num),
                 "Name": student_name,
-                "Total Marks": total_marks,
-                "Average (%)": round(calculated_avg, 2),
-                "Status": final_status
+                "Father Name": father_name,
+                "Mother Name": mother_name
             }
-            # Inject course tracking fields dynamically
-            for course, mark in form_scores.items():
-                new_entry[course] = int(mark)
+            
+            for sub in SUBJECTS_DATA:
+                score = form_scores[sub["name"]]
+                grade = calculate_grade(score)
+                if grade == "F": pass_status = "Fail"
                 
+                new_entry[f"{sub['name']}_Score"] = int(score)
+                new_entry[f"{sub['name']}_Grade"] = grade
+                weighted_points += grade_to_points(grade) * sub["credits"]
+                
+            sgpa = weighted_points / total_credits
+            new_entry["SGPA"] = round(sgpa, 2)
+            new_entry["Status"] = pass_status
+            
             st.session_state.student_db = pd.concat([st.session_state.student_db, pd.DataFrame([new_entry])], ignore_index=True)
-            local_storage.setItem("uni_master_db", st.session_state.student_db.to_json(orient="records"))
+            local_storage.setItem("uni_master_db_v2", st.session_state.student_db.to_json(orient="records"))
             st.success(f"✅ Securely committed transcript profile for {student_name}!")
             st.rerun()
 
@@ -159,61 +198,39 @@ with col_table:
     st.subheader("📋 Centralized Master Transcript Ledger")
     
     if not st.session_state.student_db.empty:
-        # Columns selection display grid view filter
-        display_df = st.session_state.student_db[["University", "Class", "Roll Num", "Name", "Total Marks", "Average (%)", "Status"]]
+        display_df = st.session_state.student_db[["Department", "Roll Num", "Name", "SGPA", "Status"]]
         st.dataframe(display_df, use_container_width=True, hide_index=True)
         
-        # Document Export Buffer Compilation Layer
-        excel_buffer = BytesIO()
-        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-            st.session_state.student_db.to_excel(writer, index=False, sheet_name="Master Transcripts Ledger")
-            
-        st.download_button(
-            label="📥 Download Master Database Spreadsheet (.xlsx)",
-            data=excel_buffer.getvalue(),
-            file_name="University_Master_Transcripts.xlsx",
-            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-        )
+        # Target Selection for Certificate Print Preview
+        st.markdown("---")
+        st.subheader("🖨️ Select Student To Print Grade Sheet")
+        target_student = st.selectbox("Choose Student Profile:", st.session_state.student_db["Name"].unique())
+        
+        student_row = st.session_state.student_db[st.session_state.student_db["Name"] == target_student].iloc[0]
     else:
-        st.info("System memory pipeline is empty. Submit a transcript record to initialize ledger tracking.")
+        st.info("System ledger pipeline is empty. Submit a transcript record to view printable output sheets.")
 
 st.markdown("---")
 
-# 6. Performance Evaluation Analytical Metrics Panel
-st.subheader("📊 Analytical Class Performance Indicators Dashboard")
-
+# 5. PRINTABLE REPORT CARD CODE COMPONENT (MATCHING THE ATTACHED IMAGE)
 if not st.session_state.student_db.empty:
-    db = st.session_state.student_db
+    st.subheader("🖨️ Grade Sheet Print Preview")
+    st.info("💡 Pro Tip: To print this sheet cleanly, press Ctrl+P (or Cmd+P on Mac). The application layout will disappear automatically, leaving only the official document sheet template visible.")
     
-    # Statistical Compilations
-    total_records = len(db)
-    passed_count = len(db[db["Status"] == "Pass"])
-    failed_count = len(db[db["Status"] == "Fail"])
-    global_average = pd.to_numeric(db["Average (%)"]).mean()
-    
-    # High-level Metrics Display Row
-    m_col1, m_col2, m_col3, m_col4 = st.columns(4)
-    m_col1.metric("Total Available Students", f"{total_records} Active")
-    m_col2.metric("Total Passed (🏅 ≥40%)", f"{passed_count} Students")
-    m_col3.metric("Total Failed (❌ <40%)", f"{failed_count} Students")
-    m_col4.metric("Cohort Cumulative Average", f"{global_average:.2f}%")
-    
-    st.markdown("---")
-    st.write("📈 **Peak Academic Achievement Tracking Per Subject Course**")
-    
-    # Sub-component metrics mapping highest grade per subject dynamically
-    sub_metrics = st.columns(5)
-    for index, course in enumerate(COURSES_LIST):
-        col_pos = sub_metrics[index % 5]
-        with col_pos:
-            highest_mark = int(pd.to_numeric(db[course]).max())
-            st.metric(f"🥇 Highest {course}", f"{highest_mark}/100")
-            
-    # Chart Visualizations Layout
-    chart_l, chart_r = st.columns(2)
-    with chart_l:
-        st.plotly_chart(px.pie(db, names="Status", title="Cohort Distribution: Pass vs Fail Ratio", hole=0.3, color="Status", color_discrete_map={"Pass":"#2ecc71","Fail":"#e74c3c"}), use_container_width=True)
-    with chart_r:
-        st.plotly_chart(px.histogram(db, x="Average (%)", title="Overall Percentage Grade Density Spectrum Map", nbins=10), use_container_width=True)
-else:
-    st.info("Awaiting academic profile uploads to populate live descriptive statistics diagrams.")
+    # Compile rows layout for the dynamic HTML transcript table
+    table_rows_html = ""
+    for sub in SUBJECTS_DATA:
+        grade_val = student_row[f"{sub['name']}_Grade"]
+        table_rows_html += f"""
+        <tr>
+            <td style="border: 1px solid black; padding: 6px; text-align: center;">{sub['code']}</td>
+            <td style="border: 1px solid black; padding: 6px; text-align: left;">{sub['name']}</td>
+            <td style="border: 1px solid black; padding: 6px; text-align: center;">{sub['type']}</td>
+            <td style="border: 1px solid black; padding: 6px; text-align: center;">{sub['credits']}</td>
+            <td style="border: 1px solid black; padding: 6px; text-align: center; font-weight: bold;">{grade_val}</td>
+        </tr>
+        """
+        
+    # Complete raw HTML layout component structured identically to the user's uploaded image
+    report_card_template = f"""
+    <div class="print-container" style="border: 4px double black; padding: 25px; max-width: 800px; margin: auto; background-color: white; color: black; font-family: 'Arial', sans-serif;">
