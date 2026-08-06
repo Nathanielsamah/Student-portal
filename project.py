@@ -1,240 +1,156 @@
 import streamlit as st
 import pandas as pd
+import plotly.express as px
 import json
-from io import BytesIO
-from datetime import date
-from streamlit_local_storage import LocalStorage
+from io import BytesIO  # Handles file memory for the Excel download
+from streamlit_local_storage import LocalStorage  # Saves data directly to browser hard drive
 
-# --- CONFIGURATION: MASTER SECURITY ACCESS ---
-MASTER_ID = "admin"
-MASTER_PASSWORD = "school2026"
-
-# --- CONFIGURATION: SUBJECTS WITH CODES & TYPES MATCHING THE IMAGE ---
-SUBJECTS_DATA = [
-    {"code": "BMPD402-18", "name": "Mentoring and Professional Development", "type": "Practical", "credits": 1},
-    {"code": "UGCA1913", "name": "Computer Networks", "type": "Theory", "credits": 4},
-    {"code": "UGCA1916", "name": "Computer Networks Laboratory", "type": "Practical", "credits": 2},
-    {"code": "UGCA1927", "name": "Web Designing", "type": "Theory", "credits": 3},
-    {"code": "UGCA1928", "name": "Web Designing Laboratory", "type": "Practical", "credits": 1},
-    {"code": "UGCA1932", "name": "Programming in Java", "type": "Theory", "credits": 4},
-    {"code": "UGCA1938", "name": "Programming in Java Laboratory", "type": "Practical", "credits": 2},
-    {"code": "UGCA1961", "name": "Basic Accounting", "type": "Theory", "credits": 4},
-    {"code": "UGCA1962", "name": "Basic Accounting Laboratory", "type": "Practical", "credits": 2}
-]
-
-# Automated Grading Function
-def calculate_grade(score):
-    if score >= 90: return "A+"
-    elif score >= 80: return "A"
-    elif score >= 70: return "B+"
-    elif score >= 60: return "B"
-    elif score >= 50: return "C"
-    elif score >= 40: return "P"
-    else: return "F"
-
-# Grade Point calculation for SGPA estimation
-def grade_to_points(grade):
-    mapping = {"A+": 10, "A": 9, "B+": 8, "B": 7, "C": 6, "P": 5, "F": 0}
-    return mapping.get(grade, 0)
-
-# 1. Page Configuration
+# 1. Page Configuration and Theme Styling
 st.set_page_config(
-    page_title="University Grade Sheet Management Portal",
+    page_title="Professor's Student Records Portal",
     page_icon="🎓",
     layout="wide"
 )
 
-# Inject print optimization styles to hide interface during browser printing
-st.markdown("""
-<style>
-@media print {
-    .stApp > header, [data-testid="stSidebar"], [data-testid="stForm"], button, .no-print, [data-testid="stHeader"] {
-        display: none !important;
-    }
-    .print-container {
-        display: block !important;
-        width: 100% !important;
-        border: none !important;
-        padding: 0 !important;
-    }
-}
-</style>
-""", unsafe_allow_html=True)
-
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
-
-# 2. Sidebar Navigation Control Panel
-st.sidebar.title("🔐 Secure Login & Settings")
-
-if not st.session_state.logged_in:
-    input_id = st.sidebar.text_input("Enter Master ID:")
-    input_password = st.sidebar.text_input("Enter Password:", type="password")
-    login_button = st.sidebar.button("Login To System")
-
-    if login_button:
-        if input_id == MASTER_ID and input_password == MASTER_PASSWORD:
-            st.session_state.logged_in = True
-            st.sidebar.success("✅ Login Verified!")
-            st.rerun()
-        else:
-            st.sidebar.error("❌ Invalid Credentials.")
-else:
-    st.sidebar.success(f"Active Session: {MASTER_ID}")
-    st.sidebar.markdown("---")
-    
-    if st.sidebar.button("🗑️ Wipe Entire Database"):
-        st.session_state.student_db = pd.DataFrame()
-        local_storage = LocalStorage()
-        local_storage.setItem("uni_master_db_v3", "")
-        st.sidebar.warning("💥 Database cleared!")
-        st.rerun()
-        
-    if st.sidebar.button("🚪 System Logout"):
-        st.session_state.logged_in = False
-        st.rerun()
-
-if not st.session_state.logged_in:
-    st.title("🎓 University Academic Record & Grade Sheet System")
-    st.warning("🔒 Access Denied. Please input authentication credentials in the sidebar panel.")
-    st.stop()
-
-# 3. Main Workspace Setup
-st.title("🎓 University Academic Record & Grade Sheet System")
-st.write("Six-Week Python Training Project: Automated Performance Assessment Engine.")
+# 2. Header Section
+st.title("🎓 Professor's Student Records & Analytics Portal")
+st.write("An administrative database dashboard designed for educators to record student details, track marks, and monitor performance trends.")
 st.markdown("---")
 
+
+# 3. PERMANENT LOCAL STORAGE INITIALIZATION
+# Connects to the individual teacher's browser hard drive
 local_storage = LocalStorage()
-saved_json = local_storage.getItem("uni_master_db_v3")
+
+# Check if this specific browser already has saved records
+saved_json = local_storage.getItem("permanent_student_db")
 
 if 'student_db' not in st.session_state:
     if saved_json and saved_json.strip() != "":
         try:
-            st.session_state.student_db = pd.DataFrame(json.loads(saved_json))
+            # Convert saved browser text back into a usable data table
+            data_dict = json.loads(saved_json)
+            st.session_state.student_db = pd.DataFrame(data_dict)
         except Exception:
-            st.session_state.student_db = pd.DataFrame()
+            # Fallback if the saved data gets corrupted
+            st.session_state.student_db = pd.DataFrame(columns=["Roll Num", "Name", "Department", "Marks (%)", "Grade"])
     else:
-        st.session_state.student_db = pd.DataFrame()
+        # Brand new teacher opening the site gets a completely clean, empty table
+        st.session_state.student_db = pd.DataFrame(columns=["Roll Num", "Name", "Department", "Marks (%)", "Grade"])
 
-# 4. Interface Split Layout Configuration
-col_form, col_table = st.columns(2, gap="large")
 
+# 4. Layout: Split Screen into Input Form (Left) and Data View (Right)
+col_form, col_table = st.columns([1, 2], gap="large")
+
+# --- LEFT COLUMN: TEACHER INPUT FORM ---
 with col_form:
-    st.subheader("Transcript Generation Input Form")
+    st.subheader("➕ Add New Student Record")
     
-    with st.form("academic_entry_form", clear_on_submit=False):
-        selected_uni = st.selectbox("Select University Header:", [
-            "I.K. GUJRAL PUNJAB TECHNICAL UNIVERSITY"
-        ])
-        selected_college = st.selectbox("Name of the College/Institute:", [
-            "Synetic Business School, Sahibana, Ludhiana"
-        ])
-        department = st.selectbox("Department / Course Stream:", [
-            "Bachelor of Science (Information Technology)", 
-            "Computer Science & Engineering", 
-            "Business Administration"
-        ])
-        semester = st.selectbox("Semester:", ["FIRST Semester", "SECOND Semester", "THIRD Semester", "FOURTH Semester"])
-        exam_session = st.text_input("Examination Session Date:", value="April-2025")
-        issue_date = st.date_input("Date of Issue:", date.today())
-        edp_serial = st.text_input("S.No. of EDP:", value="1002803941")
+    with st.form("student_entry_form", clear_on_submit=True):
+        roll_num = st.number_input("Roll Number", min_value=1, step=1, value=104)
+        student_name = st.text_input("Student Full Name", placeholder="Enter name here")
+        department = st.selectbox("Department", ["IT", "Cyber Security", "Cloud Computing", "Computer Science"])
+        marks = st.slider("Total Marks (%)", min_value=0, max_value=100, value=75)
+        grade = st.selectbox("Final Grade", ["A+", "A", "B+", "B", "C", "Fail"])
         
-        st.markdown("---")
-        student_name = st.text_input("Student Full Name:")
-        father_name = st.text_input("Father's Name:")
-        mother_name = st.text_input("Mother's Name:")
-        roll_num = st.number_input("Regn. cum Roll No:", min_value=1, step=1, value=2221757)
-        
-        st.markdown("---")
-        st.write("📊 **Enter Subject Marks (0 - 100)**")
-        
-        form_scores = {}
-        for sub in SUBJECTS_DATA:
-            form_scores[sub["name"]] = st.number_input(f"{sub['name']} ({sub['code']}):", min_value=0, max_value=100, value=0)
-            
-        submit_record = st.form_submit_button("💾 Save Student Record")
+        submit_button = st.form_submit_button("Save Student Record")
 
-    if submit_record:
-        if not student_name.strip():
-            st.error("⚠️ Record rejected: Student Full Name field cannot be empty.")
+    # --- UPDATED SAVE FORM LOGIC ---
+    if submit_button:
+        if student_name.strip() == "":
+            st.error("⚠️ Please enter a valid student name.")
+        elif not st.session_state.student_db.empty and roll_num in st.session_state.student_db["Roll Num"].values:
+            st.error(f"⚠️ Roll Number {roll_num} already exists in the system.")
         else:
-            # Calculation operations 
-            total_credits = sum([sub["credits"] for sub in SUBJECTS_DATA])
-            weighted_points = 0
-            pass_status = "Pass"
-            
-            new_entry = {
-                "University": selected_uni,
-                "College": selected_college,
-                "Department": department,
-                "Semester": semester,
-                "Session": exam_session,
-                "Date": str(issue_date),
-                "EDP": edp_serial,
+            new_student = {
                 "Roll Num": int(roll_num),
                 "Name": student_name,
-                "Father Name": father_name,
-                "Mother Name": mother_name
+                "Department": department,
+                "Marks (%)": int(marks),
+                "Grade": grade
             }
+            # Append new student to the session state dataframe
+            st.session_state.student_db = pd.concat(
+                [st.session_state.student_db, pd.DataFrame([new_student])], 
+                ignore_index=True
+            )
             
-            for sub in SUBJECTS_DATA:
-                score = form_scores[sub["name"]]
-                grade = calculate_grade(score)
-                if grade == "F": pass_status = "Fail"
-                
-                new_entry[f"{sub['name']}_Score"] = int(score)
-                new_entry[f"{sub['name']}_Grade"] = grade
-                weighted_points += grade_to_points(grade) * sub["credits"]
-                
-            sgpa = weighted_points / total_credits
-            new_entry["SGPA"] = round(sgpa, 2)
-            new_entry["Status"] = pass_status
+            # Convert table to text format and save it permanently to the browser hard drive
+            updated_json = st.session_state.student_db.to_json(orient="records")
+            local_storage.setItem("permanent_student_db", updated_json)
             
-            st.session_state.student_db = pd.concat([st.session_state.student_db, pd.DataFrame([new_entry])], ignore_index=True)
-            local_storage.setItem("uni_master_db_v3", st.session_state.student_db.to_json(orient="records"))
-            st.success(f"✅ Securely committed transcript profile for {student_name}!")
-            st.rerun()
+            st.success(f"✅ Successfully saved {student_name} permanently to your device!")
+            st.rerun()  # Forces app to refresh instantly and lock in the saved data
 
+# --- RIGHT COLUMN: DATABASE VIEW & EXPORT ---
 with col_table:
-    st.subheader("📋 Centralized Master Transcript Ledger")
+    st.subheader("📊 Current Student Database")
     
-    if not st.session_state.student_db.empty:
-        display_df = st.session_state.student_db[["Department", "Roll Num", "Name", "SGPA", "Status"]]
-        st.dataframe(display_df, use_container_width=True, hide_index=True)
-        
-        # Target Selection for Certificate Print Preview
-        st.markdown("---")
-        st.subheader("🖨️ Select Student To Print Grade Sheet")
-        target_student = st.selectbox("Choose Student Profile:", st.session_state.student_db["Name"].unique())
-        
-        student_row = st.session_state.student_db[st.session_state.student_db["Name"] == target_student].iloc
-    else:
-        st.info("System ledger pipeline is empty. Submit a transcript record to view printable output sheets.")
+    # Display the interactive spreadsheet table
+    st.dataframe(st.session_state.student_db, use_container_width=True, hide_index=True)
+    
+    # --- PROCESS DATA INTO EXCEL FORMAT ---
+    excel_buffer = BytesIO()
+    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+        st.session_state.student_db.to_excel(writer, index=False, sheet_name="Student Records")
+    excel_data = excel_buffer.getvalue()
+    
+    # Download Button configured for Excel (.xlsx)
+    st.download_button(
+        label="📥 Download Database as Excel Spreadsheet",
+        data=excel_data,
+        file_name="student_records.xlsx",
+        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        help="Click here to save this database as an official Microsoft Excel file (.xlsx)"
+    )
 
 st.markdown("---")
 
-# 5. PRINTABLE REPORT CARD COMPONENT (SAFE CONCATENATION METHOD)
-if not st.session_state.student_db.empty:
-    st.subheader("🖨️ Grade Sheet Print Preview")
-    st.info("💡 Pro Tip: To print this sheet cleanly, press Ctrl+P (or Cmd+P on Mac). The application layout will disappear automatically, leaving only the official document sheet template visible.")
-    
-    # Extract row items to local simple text variables safely beforehand
-    v_uni = str(student_row["University"])
-    v_roll = str(student_row["Roll Num"])
-    v_college = str(student_row["College"])
-    v_dept = str(student_row["Department"])
-    v_sem = str(student_row["Semester"])
-    v_session = str(student_row["Session"])
-    v_name = str(student_row["Name"]).upper()
-    v_father = str(student_row["Father Name"]).upper()
-    v_mother = str(student_row["Mother Name"]).upper()
-    v_sgpa = str(student_row["SGPA"])
-    v_date = str(student_row["Date"])
-    v_edp = str(student_row["EDP"])
+# 5. Bottom Section: Automated Analytics Dashboard
+st.subheader("📈 Class Performance Analytics")
 
-    # Compile rows layout for the dynamic HTML transcript table
-    table_rows_html = ""
-    for sub in SUBJECTS_DATA:
-        grade_val = str(student_row[sub["name"] + "_Grade"])
-        table_rows_html += "<tr>"
-        table_rows_html += "<td style='border: 1px solid black; padding: 6px; text-align: center;'>" + sub["code"] + "</td>"
+if not st.session_state.student_db.empty:
+    # Calculations
+    total_students = len(st.session_state.student_db)
+    average_score = pd.to_numeric(st.session_state.student_db["Marks (%)"]).mean()
+    
+    # Summary Display Cards
+    stat_col1, stat_col2, stat_col3 = st.columns(3)
+    stat_col1.metric("Total Enrolled Students", f"{total_students} Students")
+    stat_col2.metric("Class Average Marks", f"{average_score:.1f}%")
+    stat_col3.metric("Highest Class Score", f"{pd.to_numeric(st.session_state.student_db['Marks (%)']).max()}%")
+    
+    # Graphical Charting via Plotly
+    st.write("")
+    chart_col1, chart_col2 = st.columns(2)
+    
+    with chart_col1:
+        # Grade Count Bar Chart
+        grade_counts = st.session_state.student_db["Grade"].value_counts().reset_index()
+        grade_counts.columns = ["Grade", "Count"]
+        
+        fig_bar = px.bar(
+            grade_counts, 
+            x="Grade", 
+            y="Count", 
+            title="Distribution of Student Grades",
+            color="Grade",
+            text_auto=True
+        )
+        st.plotly_chart(fig_bar, use_container_width=True)
+        
+    with chart_col2:
+        # Department Wise Distribution
+        dept_counts = st.session_state.student_db["Department"].value_counts().reset_index()
+        dept_counts.columns = ["Department", "Count"]
+        
+        fig_pie = px.pie(
+            dept_counts, 
+            values="Count", 
+            names="Department", 
+            title="Student Enrollment by Department",
+            hole=0.4
+        )
+        st.plotly_chart(fig_pie, use_container_width=True)
+else:
+    st.info("The database is currently empty. Add student records to generate live analytics.")
