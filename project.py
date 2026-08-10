@@ -5,9 +5,6 @@ import json
 from io import BytesIO  # Handles file memory for the Excel download
 from streamlit_local_storage import LocalStorage  # Saves data directly to browser hard drive
 
-# --- CONFIGURATION: SET YOUR MASTER CREDENTIALS HERE ---
-MASTER_ID = "admin"
-MASTER_PASSWORD = "school2026"
 
 # 1. Page Configuration and Theme Styling
 st.set_page_config(
