@@ -12,55 +12,13 @@ st.set_page_config(
     layout="wide"
 )
 
-# Initialize login state across refreshes
-if "logged_in" not in st.session_state:
-    st.session_state.logged_in = False
+# 2. Sidebar Management Panel
+st.sidebar.title("🛠️ System Panel")
+st.sidebar.info("🔓 Public Access Mode Enabled for Reviewers")
+st.sidebar.markdown("---")
+st.sidebar.subheader("Administrative Controls")
 
-# 2. Sidebar Login & Management Panel
-st.sidebar.title("🔐 System Panel")
-
-if not st.session_state.logged_in:
-    # Show Login form if not logged in
-    input_id = st.sidebar.text_input("Enter Master ID:")
-    input_password = st.sidebar.text_input("Enter Password:", type="password")
-    login_button = st.sidebar.button("Login")
-
-    if login_button:
-        if input_id == MASTER_ID and input_password == MASTER_PASSWORD:
-            st.session_state.logged_in = True
-            st.sidebar.success("✅ Login Successful!")
-            st.rerun()
-        else:
-            st.sidebar.error("❌ Incorrect ID or Password.")
-else:
-    # Show Control buttons if already logged in
-    st.sidebar.success(f"Logged in as: **{MASTER_ID}**")
-    
-    st.sidebar.markdown("---")
-    st.sidebar.subheader("🛠️ Administrative Controls")
-    
-    # CLEAR ALL DATA BUTTON
-    if st.sidebar.button("🗑️ Clear All Student Data", help="This will permanently delete all records saved on this device."):
-        # 1. Wipe local memory dataframe
-        st.session_state.student_db = pd.DataFrame(columns=["Roll Num", "Name", "Department", "Marks (%)", "Grade"])
-        # 2. Clear browser hard drive cache
-        local_storage = LocalStorage()
-        local_storage.setItem("permanent_student_db_master", "")
-        st.sidebar.warning("💥 All local student data has been wiped!")
-        st.rerun()
-        
-    # LOGOUT BUTTON
-    if st.sidebar.button("🚪 Log Out"):
-        st.session_state.logged_in = False
-        st.rerun()
-
-# Check if user is authenticated
-if not st.session_state.logged_in:
-    st.title("🎓 Professor's Student Records & Analytics Portal")
-    st.warning("🔒 Access Denied. Please enter the correct Master ID and Password in the sidebar to unlock the portal.")
-    st.stop()  # Stops execution right here if credentials don't match
-
-# 3. Header Section (Only shows AFTER successful login)
+# 3. Header Section (Always Visible)
 st.title("🎓 Professor's Student Records & Analytics Portal")
 st.write("An administrative database dashboard designed for educators to record student details, track marks, and monitor performance trends.")
 st.markdown("---")
@@ -80,7 +38,21 @@ if 'student_db' not in st.session_state:
         except Exception:
             st.session_state.student_db = pd.DataFrame(columns=["Roll Num", "Name", "Department", "Marks (%)", "Grade"])
     else:
-        st.session_state.student_db = pd.DataFrame(columns=["Roll Num", "Name", "Department", "Marks (%)", "Grade"])
+        # Pre-seed sample data so reviewers instantly see analytics without manual typing
+        sample_data = [
+            {"Roll Num": 101, "Name": "Blessing Kamara", "Department": "IT", "Marks (%)": 88, "Grade": "A"},
+            {"Roll Num": 102, "Name": "Emmanuel Kollie", "Department": "Cyber Security", "Marks (%)": 92, "Grade": "A+"},
+            {"Roll Num": 103, "Name": "Sarah Sirleaf", "Department": "Cloud Computing", "Marks (%)": 74, "Grade": "B+"},
+            {"Roll Num": 104, "Name": "Jefferson Weah", "Department": "Computer Science", "Marks (%)": 45, "Grade": "Fail"},
+        ]
+        st.session_state.student_db = pd.DataFrame(sample_data)
+
+# CLEAR ALL DATA BUTTON (Moved to run safely after initialization)
+if st.sidebar.button("🗑️ Clear All Student Data", help="This will permanently delete all records saved on this device."):
+    st.session_state.student_db = pd.DataFrame(columns=["Roll Num", "Name", "Department", "Marks (%)", "Grade"])
+    local_storage.setItem("permanent_student_db_master", "")
+    st.sidebar.warning("💥 Local student data has been wiped!")
+    st.rerun()
 
 # 5. Layout: Split Screen into Input Form (Left) and Data View (Right)
 col_form, col_table = st.columns([1, 2], gap="large")
@@ -90,7 +62,7 @@ with col_form:
     st.subheader("➕ Add New Student Record")
     
     with st.form("student_entry_form", clear_on_submit=True):
-        roll_num = st.number_input("Roll Number", min_value=1, step=1, value=104)
+        roll_num = st.number_input("Roll Number", min_value=1, step=1, value=105)
         student_name = st.text_input("Student Full Name", placeholder="Enter name here")
         department = st.selectbox("Department", ["IT", "Cyber Security", "Cloud Computing", "Computer Science"])
         marks = st.slider("Total Marks (%)", min_value=0, max_value=100, value=75)
@@ -123,6 +95,7 @@ with col_form:
             local_storage.setItem("permanent_student_db_master", updated_json)
             
             st.success(f"✅ Successfully saved {student_name} permanently to your device!")
+            st.rerun()
 
 # --- RIGHT COLUMN: DATABASE VIEW & EXPORT ---
 with col_table:
@@ -131,20 +104,21 @@ with col_table:
     # Display the interactive spreadsheet table
     st.dataframe(st.session_state.student_db, use_container_width=True, hide_index=True)
     
-    # --- PROCESS DATA INTO EXCEL FORMAT ---
-    excel_buffer = BytesIO()
-    with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
-        st.session_state.student_db.to_excel(writer, index=False, sheet_name="Student Records")
-    excel_data = excel_buffer.getvalue()
-    
-    # Download Button configured for Excel (.xlsx)
-    st.download_button(
-        label="📥 Download Database as Excel Spreadsheet",
-        data=excel_data,
-        file_name="student_records.xlsx",
-        mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        help="Click here to save this database as an official Microsoft Excel file (.xlsx)"
-    )
+    if not st.session_state.student_db.empty:
+        # --- PROCESS DATA INTO EXCEL FORMAT ---
+        excel_buffer = BytesIO()
+        with pd.ExcelWriter(excel_buffer, engine='openpyxl') as writer:
+            st.session_state.student_db.to_excel(writer, index=False, sheet_name="Student Records")
+        excel_data = excel_buffer.getvalue()
+        
+        # Download Button configured for Excel (.xlsx)
+        st.download_button(
+            label="📥 Download Database as Excel Spreadsheet",
+            data=excel_data,
+            file_name="student_records.xlsx",
+            mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            help="Click here to save this database as an official Microsoft Excel file (.xlsx)"
+        )
 
 st.markdown("---")
 
